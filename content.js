@@ -1,75 +1,68 @@
-// SusMode - Content Script
-// Runs inside the actual webpage (NOT the extension popup)
+// SusMode - Content Script (Improved)
+console.log('SusMode active');
 
-console.log('SusMode content script running');
+// Track already processed elements
+const processed = new WeakSet();
 
-// Encapsulate logic to avoid polluting global scope
-const blockAI = (() => {
-    // Selectors targeting AI-related UI elements
-    const aiSelectors = [
-        '.plR5qb',                        // Specific class (Google AI button)
-        'button[aria-label*="AI"]',       // Buttons with "AI" in aria-label
-        'svg path[d*="M17.5 12c0-3.04"]'  // Sparkle icon path
-    ];
+// Detect AI-related elements
+const isAIText = (text) => {
+    if (!text) return false;
 
-    // Track already hidden elements
-    const hiddenElements = new WeakSet();
+    text = text.toLowerCase();
+    return (
+        text.includes('ai mode') ||
+        text.includes('search with ai') ||
+        text.includes('ask ai')
+    );
+};
 
-    // Hide helper
-    const hideElement = (el) => {
-        if (!el || hiddenElements.has(el)) return;
+// Remove AI button/container
+const removeAIElement = (el) => {
+    if (!el || processed.has(el)) return;
 
-        el.style.setProperty('display', 'none', 'important');
-        hiddenElements.add(el);
+    const text = el.textContent?.trim();
+    if (!isAIText(text)) return;
 
-        console.log('SusMode: Blocked element', el);
-    };
+    // Find the actual clickable container
+    const clickable = el.closest('a, button, div[role="button"]');
 
-    return () => {
-        // 1. Hide based on selectors
-        aiSelectors.forEach(selector => {
-            try {
-                document.querySelectorAll(selector).forEach(el => {
-                    const elementToHide =
-                        el.tagName === 'path' ? el.closest('button') : el;
+    if (clickable && !processed.has(clickable)) {
+        clickable.remove();
+        processed.add(clickable);
+        console.log('SusMode: Removed AI element:', clickable);
+    }
+};
 
-                    hideElement(elementToHide);
-                });
-            } catch (e) {
-                console.error('SusMode: Invalid selector:', selector);
-            }
+// Efficient scan (only relevant elements)
+const scan = (root = document) => {
+    root.querySelectorAll('span, div, a').forEach(removeAIElement);
+};
+
+// Initial run
+scan();
+
+// Observe dynamic changes (Google updates UI after load)
+const observer = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+        mutation.addedNodes.forEach(node => {
+            if (!(node instanceof Element)) return;
+
+            // Check the node itself
+            removeAIElement(node);
+
+            // Check its children
+            scan(node);
         });
-
-        // 2. Hide based on button text
-        document.querySelectorAll('button').forEach(btn => {
-            const btnText = btn.textContent?.trim() || "";
-
-            if (
-                (btnText === 'AI' || btnText.includes('AI Mode')) &&
-                !hiddenElements.has(btn)
-            ) {
-                hideElement(btn);
-            }
-        });
-    };
-})();
-
-// Run immediately
-blockAI();
-
-// Observe DOM changes (for dynamically loaded elements)
-const observer = new MutationObserver(() => {
-    blockAI();
+    }
 });
 
-// Ensure body exists before observing
+// Start observing safely
 if (document.body) {
     observer.observe(document.body, {
         childList: true,
         subtree: true
     });
 } else {
-    // Fallback if body isn't ready yet
     window.addEventListener('DOMContentLoaded', () => {
         observer.observe(document.body, {
             childList: true,
