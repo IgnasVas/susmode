@@ -15,6 +15,31 @@
             <h2>Welcome to SusMode!</h2>
             <p>Make your browsing more sustainable. This extension helps you track and reduce your digital carbon footprint.</p>
 
+            <div class="metrics">
+                <div class="metric-hero">
+                    <span class="metric-label">Estimated lifetime energy saved</span>
+                    <span class="metric-value" id="metric-energy"></span>
+                </div>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <span class="metric-label">Scripts blocked</span>
+                        <span class="metric-value" id="metric-scripts"></span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Ads blocked</span>
+                        <span class="metric-value" id="metric-ads"></span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Videos paused</span>
+                        <span class="metric-value" id="metric-videos"></span>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">AI mode disabled</span>
+                        <span class="metric-value" id="metric-ai-disabled"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="toggle-row">
                 <span id="toggle-status" class="toggle-status">Enabled</span>
                 <button id="toggle-button" class="toggle-button" type="button">Turn off</button>
