@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // - Initialize event listeners
     // - Fetch and display user data
     // - Update UI elements dynamically
+
     const statusEl = document.getElementById('toggle-status');
     const buttonEl = document.getElementById('toggle-button');
     const metricEnergy = document.getElementById('metric-energy');
@@ -25,7 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
         videos: '67',
         aiDisabled: '6677'
     };
-
+ // values to be replaced one we start tracking the actual data
     if (metricEnergy) metricEnergy.textContent = defaults.energy;
     if (metricScripts) metricScripts.textContent = defaults.scripts;
     if (metricAds) metricAds.textContent = defaults.ads;
