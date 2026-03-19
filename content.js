@@ -1,6 +1,8 @@
 // SusMode - Content Script (Improved)
 console.log('SusMode active');
 
+let enabled = true;
+
 // Track already processed elements
 const processed = new WeakSet();
 
@@ -18,6 +20,7 @@ const isAIText = (text) => {
 
 // Remove AI button/container
 const removeAIElement = (el) => {
+    if (!enabled) return;
     if (!el || processed.has(el)) return;
 
     const text = el.textContent?.trim();
@@ -35,11 +38,20 @@ const removeAIElement = (el) => {
 
 // Efficient scan (only relevant elements)
 const scan = (root = document) => {
+    if (!enabled) return;
     root.querySelectorAll('span, div, a').forEach(removeAIElement);
 };
 
-// Initial run
-scan();
+chrome.storage.local.get({ susmodeEnabled: true }, (result) => {
+    enabled = result.susmodeEnabled;
+    if (enabled) scan();
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName !== 'local' || !changes.susmodeEnabled) return;
+    enabled = changes.susmodeEnabled.newValue;
+    if (enabled) scan();
+});
 
 // Observe dynamic changes (Google updates UI after load)
 const observer = new MutationObserver((mutations) => {

@@ -54,6 +54,31 @@ h1 {
     line-height: 1.5;
 }
 
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.toggle-status {
+    font-size: 13px;
+    color: #2f855a;
+    font-weight: 600;
+}
+
+.toggle-button {
+    border: none;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #2f855a;
+    color: #fff;
+    cursor: pointer;
+}
+
 .feature-list h3 {
     font-size: 16px;
     color: #2d3748;
