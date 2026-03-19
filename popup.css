@@ -54,6 +54,75 @@ h1 {
     line-height: 1.5;
 }
 
+.metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.metric-hero {
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: #c9ebbb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.metric-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.metric-card {
+    border-radius: 10px;
+    padding: 10px 12px;
+    background: #c9ebbb;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.metric-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #221460;
+}
+
+.metric-value {
+    font-size: 16px;
+    font-weight: 600;
+    color: #000000;
+}
+
+.toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.toggle-status {
+    font-size: 13px;
+    color: #2b8a3e;
+    font-weight: 600;
+}
+
+.toggle-button {
+    border: none;
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #2b8a3e;
+    color: #fff;
+    cursor: pointer;
+}
+
 .feature-list h3 {
     font-size: 16px;
     color: #2d3748;
