@@ -1,11 +1,34 @@
-const RULE_ID = 1;
+const RULES_TO_CLEAN = [1, 2, 3];
 
 function enableBypass() {
     chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: [RULE_ID],
+        removeRuleIds: RULES_TO_CLEAN,
         addRules: [
+            // RULE 1: Skip if tbm exists (images/videos/etc)
             {
-                id: RULE_ID,
+                id: 1,
+                priority: 3,
+                action: { type: "allow" },
+                condition: {
+                    regexFilter: "[?&]tbm=",
+                    resourceTypes: ["main_frame"]
+                }
+            },
+
+            // RULE 2: Skip if udm already exists
+            {
+                id: 2,
+                priority: 2,
+                action: { type: "allow" },
+                condition: {
+                    regexFilter: "[?&]udm=",
+                    resourceTypes: ["main_frame"]
+                }
+            },
+
+            // RULE 3: Add udm=14 otherwise
+            {
+                id: 3,
                 priority: 1,
                 action: {
                     type: "redirect",
@@ -20,22 +43,18 @@ function enableBypass() {
                     }
                 },
                 condition: {
-                    urlFilter: "google.com/search",
+                    regexFilter: "^https://www\\.google\\.com/search\\?.*",
                     resourceTypes: ["main_frame"]
                 }
             }
         ]
     });
-
-    console.log("SusMode: AI bypass ENABLED");
 }
 
 function disableBypass() {
     chrome.declarativeNetRequest.updateDynamicRules({
-        removeRuleIds: [RULE_ID]
+        removeRuleIds: RULES_TO_CLEAN
     });
-
-    console.log("SusMode: AI bypass DISABLED");
 }
 
 // Sync with your existing toggle
