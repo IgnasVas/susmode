@@ -3,7 +3,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
     console.log('SusMode extension loaded!');
-    
+
     const statusEl = document.getElementById('toggle-status');
     const buttonEl = document.getElementById('toggle-button');
     const metricEnergy = document.getElementById('metric-energy');
@@ -17,6 +17,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleAds = document.getElementById('toggle-ads');
     const toggleScripts = document.getElementById('toggle-scripts');
     const toggleVideos = document.getElementById('toggle-videos');
+    const toggleTabSuspension = document.getElementById('toggle-tab-suspension');
+    const toggleThrottling = document.getElementById('toggle-throttling');
+    const whitelistBtn = document.getElementById('whitelist-btn');
 
     if (!statusEl || !buttonEl) return;
 
@@ -36,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
             aiDisabled: 0
         }, (result) => {
             const energy = calculateEnergy(result.blockedAds, result.blockedScripts, result.blockedVideos);
-            
+
             if (metricEnergy) metricEnergy.textContent = `${energy} kWh`;
             if (metricScripts) metricScripts.textContent = result.blockedScripts || '0';
             if (metricAds) metricAds.textContent = result.blockedAds || '0';
@@ -62,13 +65,32 @@ document.addEventListener('DOMContentLoaded', () => {
         aiBlockingEnabled: true,
         adsBlockingEnabled: true,
         scriptsBlockingEnabled: true,
-        videosBlockingEnabled: true
+        videosBlockingEnabled: true,
+        tabSuspensionEnabled: true,
+        throttlingEnabled: true,
+        whitelistedSites: []
     }, (result) => {
         render(result.susmodeEnabled);
         toggleAi.checked = result.aiBlockingEnabled;
         toggleAds.checked = result.adsBlockingEnabled;
         toggleScripts.checked = result.scriptsBlockingEnabled;
         toggleVideos.checked = result.videosBlockingEnabled;
+        if (toggleTabSuspension) toggleTabSuspension.checked = result.tabSuspensionEnabled;
+        if (toggleThrottling) toggleThrottling.checked = result.throttlingEnabled;
+
+        if (whitelistBtn) {
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                if (tabs[0] && tabs[0].url) {
+                    try {
+                        const hostname = new URL(tabs[0].url).hostname;
+                        if (result.whitelistedSites.includes(hostname)) {
+                            whitelistBtn.textContent = 'Remove from Whitelist';
+                            whitelistBtn.style.background = '#c2410c';
+                        }
+                    } catch (e) { }
+                }
+            });
+        }
     });
 
     // Main toggle button
@@ -129,6 +151,42 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     });
+
+    if (toggleTabSuspension) {
+        toggleTabSuspension.addEventListener('change', () => {
+            chrome.storage.local.set({ tabSuspensionEnabled: toggleTabSuspension.checked });
+        });
+    }
+
+    if (toggleThrottling) {
+        toggleThrottling.addEventListener('change', () => {
+            chrome.storage.local.set({ throttlingEnabled: toggleThrottling.checked });
+        });
+    }
+
+    if (whitelistBtn) {
+        whitelistBtn.addEventListener('click', () => {
+            chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                if (!tabs[0] || !tabs[0].url) return;
+                try {
+                    const hostname = new URL(tabs[0].url).hostname;
+                    chrome.storage.local.get({ whitelistedSites: [] }, (res) => {
+                        let sites = res.whitelistedSites || [];
+                        if (sites.includes(hostname)) {
+                            sites = sites.filter(s => s !== hostname);
+                            whitelistBtn.textContent = 'Whitelist this Site';
+                            whitelistBtn.style.background = '#2b8a3e';
+                        } else {
+                            sites.push(hostname);
+                            whitelistBtn.textContent = 'Remove from Whitelist';
+                            whitelistBtn.style.background = '#c2410c';
+                        }
+                        chrome.storage.local.set({ whitelistedSites: sites });
+                    });
+                } catch (e) { }
+            });
+        });
+    }
 
     // Listen for storage changes to update metrics in real-time
     chrome.storage.onChanged.addListener((changes, areaName) => {

@@ -1,19 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SusMode</title>
     <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
     <div class="container">
         <h1>🌱 SusMode</h1>
         <p class="tagline">Sustainable Browser Extension</p>
-        
+
         <div class="content">
             <h2>Welcome to SusMode!</h2>
-            <p>Make your browsing more sustainable. This extension helps you track and reduce your digital carbon footprint.</p>
+            <p>Make your browsing more sustainable. This extension helps you track and reduce your digital carbon
+                footprint.</p>
 
             <div class="metrics">
                 <div class="metric-hero">
@@ -63,8 +66,21 @@
                     <label for="toggle-videos">Pause Videos</label>
                     <input type="checkbox" id="toggle-videos" class="toggle-checkbox">
                 </div>
+                <div class="toggle-item">
+                    <label for="toggle-tab-suspension">Tab Suspension</label>
+                    <input type="checkbox" id="toggle-tab-suspension" class="toggle-checkbox">
+                </div>
+                <div class="toggle-item">
+                    <label for="toggle-throttling">Background Throttling</label>
+                    <input type="checkbox" id="toggle-throttling" class="toggle-checkbox">
+                </div>
             </div>
-            
+
+            <div class="whitelist-section" style="margin-top: 15px; text-align: center;">
+                <button id="whitelist-btn" class="toggle-button" style="font-size: 0.9em; padding: 5px 10px;">Whitelist
+                    this Site</button>
+            </div>
+
             <div class="feature-list">
                 <h3>Features:</h3>
                 <ul>
@@ -75,12 +91,13 @@
                 </ul>
             </div>
         </div>
-        
+
         <footer>
             <p>v1.0.0 - Building a greener web 🌍</p>
         </footer>
     </div>
-    
+
     <script src="popup.js"></script>
 </body>
+
 </html>

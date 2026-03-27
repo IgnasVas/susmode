@@ -5,6 +5,8 @@ let aiBlockingEnabled = true;
 let adsBlockingEnabled = true;
 let scriptsBlockingEnabled = true;
 let videosBlockingEnabled = true;
+let throttlingEnabled = true;
+let whitelistedSites = [];
 
 // Track already processed elements
 const processed = new WeakSet();
@@ -48,7 +50,7 @@ const removeAIElement = (el) => {
 // Block ads
 const blockAds = () => {
     if (!adsBlockingEnabled) return;
-    
+
     const adSelectors = [
         // Google Ads
         '[data-ad-slot]',
@@ -112,7 +114,7 @@ const blockAds = () => {
 // Block scripts (except critical ones like analytics we want)
 const blockScripts = () => {
     if (!scriptsBlockingEnabled) return;
-    
+
     const scriptSelectors = [
         'script[src*="doubleclick"]',
         'script[src*="googlesyndication"]',
@@ -136,7 +138,7 @@ const blockScripts = () => {
 // Block videos
 const blockVideos = () => {
     if (!videosBlockingEnabled) return;
-    
+
     const videoSelectors = [
         'video',
         'iframe[src*="youtube"]',
@@ -183,6 +185,8 @@ chrome.storage.local.get({
     adsBlockingEnabled: true,
     scriptsBlockingEnabled: true,
     videosBlockingEnabled: true,
+    throttlingEnabled: true,
+    whitelistedSites: [],
     aiDisabled: 0,
     blockedAds: 0,
     blockedScripts: 0,
@@ -193,6 +197,8 @@ chrome.storage.local.get({
     adsBlockingEnabled = result.adsBlockingEnabled;
     scriptsBlockingEnabled = result.scriptsBlockingEnabled;
     videosBlockingEnabled = result.videosBlockingEnabled;
+    throttlingEnabled = result.throttlingEnabled;
+    whitelistedSites = result.whitelistedSites || [];
     counters.aiDisabled = result.aiDisabled;
     counters.ads = result.blockedAds;
     counters.scripts = result.blockedScripts;
@@ -207,6 +213,9 @@ chrome.storage.local.get({
 // Listen for storage changes
 chrome.storage.onChanged.addListener((changes, areaName) => {
     if (areaName !== 'local') return;
+
+    if (changes.throttlingEnabled) throttlingEnabled = changes.throttlingEnabled.newValue;
+    if (changes.whitelistedSites) whitelistedSites = changes.whitelistedSites.newValue;
 
     if (changes.susmodeEnabled) {
         susmodeEnabled = changes.susmodeEnabled.newValue;
@@ -259,4 +268,52 @@ if (document.body) {
             subtree: true
         });
     });
+}
+
+// Background Throttling Feature
+document.addEventListener('visibilitychange', () => {
+    if (!susmodeEnabled || !throttlingEnabled) return;
+
+    // Check if the current site is whitelisted
+    const currentHostname = window.location.hostname;
+    if (whitelistedSites.includes(currentHostname)) return;
+
+    if (document.hidden) {
+        // Pause media elements
+        document.querySelectorAll('video, audio').forEach(el => el.pause());
+        // Pause CSS Animations globally
+        document.body.style.animationPlayState = 'paused';
+        // Throttle JS timers
+        injectTimerThrottle(true);
+        console.log('SusMode: Throttling background tab');
+    } else {
+        // Resume CSS Animations
+        document.body.style.animationPlayState = '';
+        // Unthrottle JS timers
+        injectTimerThrottle(false);
+        console.log('SusMode: Resumed background tab');
+    }
+});
+
+function injectTimerThrottle(throttle) {
+    const script = document.createElement('script');
+    script.textContent = `
+        if (!window.__originalSetInterval) {
+            window.__originalSetInterval = window.setInterval;
+            window.__originalSetTimeout = window.setTimeout;
+        }
+        if (${throttle}) {
+            window.setInterval = function(cb, ms, ...args) {
+                return window.__originalSetInterval(cb, Math.max(ms || 0, 5000), ...args);
+            };
+            window.setTimeout = function(cb, ms, ...args) {
+                return window.__originalSetTimeout(cb, Math.max(ms || 0, 1000), ...args);
+            };
+        } else {
+            window.setInterval = window.__originalSetInterval;
+            window.setTimeout = window.__originalSetTimeout;
+        }
+    `;
+    (document.head || document.documentElement).appendChild(script);
+    script.remove();
 }
