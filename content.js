@@ -111,31 +111,66 @@ const blockAds = () => {
     });
 };
 
-// Block scripts (except critical ones like analytics we want)
+// Block scripts (ad and tracking scripts)
 const blockScripts = () => {
     if (!scriptsBlockingEnabled) return;
 
     const scriptSelectors = [
+        // Ad networks
         'script[src*="doubleclick"]',
         'script[src*="googlesyndication"]',
         'script[src*="adsbygoogle"]',
+        'script[src*="googleadservices"]',
+        'script[src*="criteo"]',
+        'script[src*="amazon-adsystem"]',
+        
+        // Google tracking
+        'script[src*="google-analytics"]',
+        'script[src*="googletagmanager"]',
+        'script[src*="analytics.google"]',
+        
+        // Generic ads/trackers
         'script[src*="ads"]',
-        'script[src*="tracker"]'
+        'script[src*="tracker"]',
+        'script[src*="track.js"]',
+        'script[src*="tracking"]',
+        'script[src*="analytics"]',
+        
+        // Facebook tracking
+        'script[src*="facebook.com/tr"]',
+        'script[src*="connect.facebook.net"]',
+        'script[src*="facebook.com/en_US/fbevents"]',
+        
+        // Other tracking networks
+        'script[src*="pinterest"]',
+        'script[src*="segment"]',
+        'script[src*="mixpanel"]',
+        'script[src*="hotjar"]',
+        'script[src*="drift"]',
+        'script[src*="intercom"]',
+        'script[src*="amplitude"]',
+        'script[src*="gtag"]',
+        'script[src*="optimizely"]',
+        'script[src*="conversion"]'
     ];
 
     scriptSelectors.forEach(selector => {
-        document.querySelectorAll(selector).forEach(el => {
-            if (!processed.has(el)) {
-                el.remove();
-                processed.add(el);
-                counters.scripts++;
-                console.log('SusMode: Blocked script');
-            }
-        });
+        try {
+            document.querySelectorAll(selector).forEach(el => {
+                if (!processed.has(el)) {
+                    el.remove();
+                    processed.add(el);
+                    counters.scripts++;
+                    console.log('SusMode: Blocked script');
+                }
+            });
+        } catch (e) {
+            console.warn('SusMode: Error blocking script selector', selector, e);
+        }
     });
 };
 
-// Block videos
+// Block videos (prevent loading and playback)
 const blockVideos = () => {
     if (!videosBlockingEnabled) return;
 
@@ -143,13 +178,31 @@ const blockVideos = () => {
         'video',
         'iframe[src*="youtube"]',
         'iframe[src*="vimeo"]',
-        'iframe[src*="dailymotion"]'
+        'iframe[src*="dailymotion"]',
+        'iframe[src*="youtu.be"]'
     ];
 
     videoSelectors.forEach(selector => {
         document.querySelectorAll(selector).forEach(el => {
             if (!processed.has(el)) {
-                el.style.display = 'none';
+                // For native video elements, pause and prevent autoplay
+                if (el.tagName === 'VIDEO') {
+                    el.pause();
+                    el.removeAttribute('autoplay');
+                    el.removeAttribute('controls');
+                    el.style.display = 'none';
+                    
+                    // Stop all video sources from loading
+                    el.querySelectorAll('source').forEach(source => {
+                        source.removeAttribute('src');
+                    });
+                }
+                // For embedded videos (iframes), hide them
+                else if (el.tagName === 'IFRAME') {
+                    el.style.display = 'none';
+                    el.removeAttribute('src');
+                }
+                
                 processed.add(el);
                 counters.videos++;
                 console.log('SusMode: Blocked video');
@@ -298,20 +351,17 @@ document.addEventListener('visibilitychange', () => {
 function injectTimerThrottle(throttle) {
     const script = document.createElement('script');
     script.textContent = `
-        if (!window.__originalSetInterval) {
-            window.__originalSetInterval = window.setInterval;
-            window.__originalSetTimeout = window.setTimeout;
+        if (!window.__susmodePaused) {
+            window.__susmodePaused = false;
         }
-        if (${throttle}) {
-            window.setInterval = function(cb, ms, ...args) {
-                return window.__originalSetInterval(cb, Math.max(ms || 0, 5000), ...args);
-            };
-            window.setTimeout = function(cb, ms, ...args) {
-                return window.__originalSetTimeout(cb, Math.max(ms || 0, 1000), ...args);
-            };
-        } else {
-            window.setInterval = window.__originalSetInterval;
-            window.setTimeout = window.__originalSetTimeout;
+        
+        // Only pause animations and media - don't throttle timers (too risky)
+        if (${throttle} && !window.__susmodePaused) {
+            window.__susmodePaused = true;
+            console.log('SusMode: Pausing background animations');
+        } else if (!${throttle} && window.__susmodePaused) {
+            window.__susmodePaused = false;
+            console.log('SusMode: Resuming background animations');
         }
     `;
     (document.head || document.documentElement).appendChild(script);
