@@ -206,9 +206,15 @@ const blockVideos = () => {
     });
 };
 
+// Check if current site is whitelisted
+const isCurrentSiteWhitelisted = () => {
+    const currentHostname = window.location.hostname;
+    return whitelistedSites.includes(currentHostname);
+};
+
 // Efficient scan for all blocking types
 const scan = (root = document) => {
-    if (!susmodeEnabled) return;
+    if (!susmodeEnabled || isCurrentSiteWhitelisted()) return;
     const scanAI = (root) => root.querySelectorAll('span, div, a').forEach(removeAIElement);
     scanAI(root);
     blockAds();
@@ -252,9 +258,27 @@ chrome.storage.local.get({
     counters.scripts = result.blockedScripts;
     counters.videos = result.blockedVideos;
 
-    if (susmodeEnabled) {
+    // Only initialize if enabled AND not whitelisted
+    if (susmodeEnabled && !isCurrentSiteWhitelisted()) {
         scan();
         updateCounters();
+    }
+    
+    // Only set up mutation observer if not whitelisted
+    if (!isCurrentSiteWhitelisted()) {
+        if (document.body) {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        } else {
+            window.addEventListener('DOMContentLoaded', () => {
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            });
+        }
     }
 });
 
@@ -293,7 +317,7 @@ const observer = new MutationObserver((mutations) => {
         mutation.addedNodes.forEach(node => {
             if (!(node instanceof Element)) return;
 
-            if (susmodeEnabled) {
+            if (susmodeEnabled && !isCurrentSiteWhitelisted()) {
                 removeAIElement(node);
                 blockAds();
                 blockScripts();
@@ -304,27 +328,9 @@ const observer = new MutationObserver((mutations) => {
     }
 });
 
-if (document.body) {
-    observer.observe(document.body, {
-        childList: true,
-        subtree: true
-    });
-} else {
-    window.addEventListener('DOMContentLoaded', () => {
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-    });
-}
-
 // Background Throttling Feature
 document.addEventListener('visibilitychange', () => {
-    if (!susmodeEnabled || !throttlingEnabled) return;
-
-    // Check if the current site is whitelisted
-    const currentHostname = window.location.hostname;
-    if (whitelistedSites.includes(currentHostname)) return;
+    if (!susmodeEnabled || !throttlingEnabled || isCurrentSiteWhitelisted()) return;
 
     if (document.hidden) {
         // Pause media elements
