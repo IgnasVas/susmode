@@ -3,7 +3,7 @@
   "name": "SusMode: Sustainable Browser Extension",
   "version": "1.0.0",
   "description": "A sustainable browser extension to promote eco-friendly browsing habits",
-  "permissions": ["scripting", "storage", "activeTab", "alarms"],
+  "permissions": ["scripting", "storage", "activeTab", "declarativeNetRequest", "alarms"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
