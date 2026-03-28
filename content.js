@@ -191,16 +191,11 @@ const blockVideos = () => {
                     el.removeAttribute('autoplay');
                     el.removeAttribute('controls');
                     el.style.display = 'none';
-                    
-                    // Stop all video sources from loading
-                    el.querySelectorAll('source').forEach(source => {
-                        source.removeAttribute('src');
-                    });
                 }
                 // For embedded videos (iframes), hide them
+                // Don't remove src - let network rules block, allows re-enabling
                 else if (el.tagName === 'IFRAME') {
                     el.style.display = 'none';
-                    el.removeAttribute('src');
                 }
                 
                 processed.add(el);
