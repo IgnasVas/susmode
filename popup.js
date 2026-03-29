@@ -20,6 +20,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const toggleTabSuspension = document.getElementById('toggle-tab-suspension');
     const toggleThrottling = document.getElementById('toggle-throttling');
     const whitelistBtn = document.getElementById('whitelist-btn');
+    const viewWhitelistBtn = document.getElementById('view-whitelist-btn');
+    const whitelistModal = document.getElementById('whitelist-modal');
+    const whitelistList = document.getElementById('whitelist-list');
+    const closeModalBtn = document.getElementById('close-whitelist-modal');
 
     if (!statusEl || !buttonEl) return;
 
@@ -181,7 +185,12 @@ document.addEventListener('DOMContentLoaded', () => {
                             whitelistBtn.textContent = 'Remove from Whitelist';
                             whitelistBtn.style.background = '#c2410c';
                         }
-                        chrome.storage.local.set({ whitelistedSites: sites });
+                        chrome.storage.local.set({ whitelistedSites: sites }, () => {
+                            // Reload page to match disabled extension behavior
+                            if (tabs[0]?.id) {
+                                chrome.tabs.reload(tabs[0].id);
+                            }
+                        });
                     });
                 } catch (e) { }
             });
@@ -196,4 +205,74 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     });
+
+    // Function to render whitelisted sites in modal
+    const renderWhitelistModal = () => {
+        chrome.storage.local.get({ whitelistedSites: [] }, (result) => {
+            const sites = result.whitelistedSites || [];
+            if (sites.length === 0) {
+                whitelistList.innerHTML = '<p style="color: #666;">No whitelisted sites</p>';
+            } else {
+                whitelistList.innerHTML = sites.map(site => `
+                    <div style="padding: 8px; background: #f5f5f5; margin: 5px 0; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;">
+                        <span>${site}</span>
+                        <button data-site="${site}" class="remove-whitelist-btn" style="background: #c2410c; color: white; border: none; padding: 4px 10px; border-radius: 3px; cursor: pointer; font-size: 0.8em;">Remove</button>
+                    </div>
+                `).join('');
+
+                // Add event listeners to remove buttons
+                document.querySelectorAll('.remove-whitelist-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const site = e.target.dataset.site;
+                        chrome.storage.local.get({ whitelistedSites: [] }, (res) => {
+                            let sites = res.whitelistedSites || [];
+                            sites = sites.filter(s => s !== site);
+                            chrome.storage.local.set({ whitelistedSites: sites }, () => {
+                                // Reload page if it matches the removed site
+                                chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+                                    if (tabs[0] && tabs[0].url) {
+                                        try {
+                                            const hostname = new URL(tabs[0].url).hostname;
+                                            if (hostname === site && tabs[0].id) {
+                                                chrome.tabs.reload(tabs[0].id);
+                                            } else {
+                                                renderWhitelistModal();
+                                            }
+                                        } catch (e) {
+                                            renderWhitelistModal();
+                                        }
+                                    }
+                                });
+                            });
+                        });
+                    });
+                });
+            }
+        });
+    };
+
+    // View whitelist button
+    if (viewWhitelistBtn) {
+        viewWhitelistBtn.addEventListener('click', () => {
+            whitelistModal.style.display = 'block';
+            renderWhitelistModal();
+        });
+    }
+
+    // Close modal button
+    if (closeModalBtn) {
+        closeModalBtn.addEventListener('click', () => {
+            whitelistModal.style.display = 'none';
+        });
+    }
+
+    // Close modal when clicking outside
+    if (whitelistModal) {
+        whitelistModal.addEventListener('click', (e) => {
+            if (e.target === whitelistModal) {
+                whitelistModal.style.display = 'none';
+            }
+        });
+    }
 });
+
